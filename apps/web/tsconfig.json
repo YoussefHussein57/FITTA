@@ -1,0 +1,12 @@
+{
+  "extends": "@fitta/config/typescript/next.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo"
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", ".next"]
+}

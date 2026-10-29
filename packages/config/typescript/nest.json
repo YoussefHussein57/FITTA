@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "FITTA NestJS application",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+
+    // NestJS dependency injection reads constructor parameter types at runtime
+    // from the metadata these two flags emit. Without them, DI resolves nothing.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // strictPropertyInitialization stays ON. DTO classes use definite assignment
+    // (`name!: string`) rather than weakening the whole project's strictness —
+    // the usual shortcut here disables a check that catches real bugs elsewhere.
+    "strictPropertyInitialization": true,
+
+    // An application is never consumed as a library, so it emits no type
+    // declarations. This also keeps `--noEmit` usable for typecheck runs.
+    "declaration": false,
+    "declarationMap": false
+  }
+}

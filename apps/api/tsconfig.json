@@ -1,0 +1,11 @@
+{
+  "extends": "@fitta/config/typescript/nest.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts", "vitest.integration.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

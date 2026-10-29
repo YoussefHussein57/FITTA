@@ -1,0 +1,87 @@
+# FITTA local infrastructure.
+#
+# Two PostgreSQL instances, deliberately:
+#   - dev  (5433) holds data you care about between sessions
+#   - test (5435) is truncated and migrated by the test suite
+#
+# They are separate *containers*, not separate databases in one container, so a
+# test run that resets its schema can never touch your development data.
+#
+# Published ports are chosen around what this machine already runs:
+#   5432 — a locally installed PostgreSQL 17
+#   5434 — another project's container stack (archivingsystem)
+# Hence 5433 and 5435. A port clash here fails in the worst possible way: by
+# silently connecting the app to someone else's database.
+
+name: fitta
+
+# ---------------------------------------------------------------------------
+# Shared definitions.
+#
+# These exist because the two services ALREADY diverged once: a locale fix was
+# applied to the dev service only, and the test database ran with the broken
+# setting for hours while dev looked correct. Anchors make that class of drift
+# structurally impossible rather than a thing to remember during review.
+# ---------------------------------------------------------------------------
+
+x-postgres-base: &postgres-base
+  image: postgres:17-alpine
+  # Survives a Docker Desktop restart and a machine reboot (acceptance case 12).
+  restart: unless-stopped
+
+x-postgres-env: &postgres-env
+  POSTGRES_USER: fitta
+  # MUST be a UTF-8 locale, not C.
+  #
+  # Under --locale=C, pg_trgm does not classify non-ASCII characters as
+  # alphanumeric: it discards every Arabic character and compares two empty
+  # trigram sets, so similarity('كشري','كشرى') returns 0 instead of a match.
+  # That silently disables the Arabic food search in ADR-012 — the feature the
+  # product exists for — while every query still "works" and returns nothing.
+  #
+  # Guarded by apps/api/test/database.integration.spec.ts; see ADR-012a.
+  POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C.UTF-8'
+
+x-postgres-healthcheck: &postgres-healthcheck
+  interval: 5s
+  timeout: 5s
+  retries: 10
+  start_period: 10s
+
+services:
+  postgres-dev:
+    <<: *postgres-base
+    container_name: fitta-postgres-dev
+    environment:
+      <<: *postgres-env
+      POSTGRES_PASSWORD: fitta_dev_password
+      POSTGRES_DB: fitta_dev
+    ports:
+      - '5433:5432'
+    volumes:
+      - fitta-pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-healthcheck
+      test: ['CMD-SHELL', 'pg_isready -U fitta -d fitta_dev']
+
+  postgres-test:
+    <<: *postgres-base
+    container_name: fitta-postgres-test
+    environment:
+      <<: *postgres-env
+      POSTGRES_PASSWORD: fitta_test_password
+      POSTGRES_DB: fitta_test
+    ports:
+      - '5435:5432'
+    volumes:
+      - fitta-pgdata-test:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-healthcheck
+      test: ['CMD-SHELL', 'pg_isready -U fitta -d fitta_test']
+
+# Named volumes, not bind mounts: `docker compose down` removes containers but
+# leaves these intact. Only `docker compose down -v` destroys them, which is why
+# that flag never appears in a default script (acceptance case 11).
+volumes:
+  fitta-pgdata-dev:
+  fitta-pgdata-test:

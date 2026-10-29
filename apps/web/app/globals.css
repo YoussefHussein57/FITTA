@@ -1,0 +1,15 @@
+@import 'tailwindcss';
+
+/*
+ * Logical properties only — `margin-inline-start`, never `margin-left`
+ * (docs/ARCHITECTURE.md §4.2). One stylesheet serves both RTL and LTR, so an
+ * Arabic layout cannot drift from its English counterpart.
+ */
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  min-height: 100dvh;
+}

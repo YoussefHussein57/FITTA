@@ -1,0 +1,20 @@
+# Normalise line endings (NFR-06).
+# Without this, a Windows checkout rewrites every line of a file on save and a
+# one-line change arrives as a whole-file diff, hiding the actual change.
+* text=auto eol=lf
+
+# Binary — never normalise.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.mp3 binary
+*.mp4 binary
+
+# Generated — collapse in diffs and exclude from language statistics.
+pnpm-lock.yaml linguist-generated=true -diff

@@ -1,0 +1,33 @@
+{
+  "name": "@fitta/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared TypeScript, ESLint, and Prettier configuration for the FITTA workspace",
+  "exports": {
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/next": "./eslint/next.js",
+    "./prettier": "./prettier/index.js",
+    "./typescript/base.json": "./typescript/base.json",
+    "./typescript/library.json": "./typescript/library.json",
+    "./typescript/nest.json": "./typescript/nest.json",
+    "./typescript/next.json": "./typescript/next.json"
+  },
+  "files": [
+    "eslint",
+    "prettier",
+    "typescript"
+  ],
+  "scripts": {
+    "build": "node --eval \"process.exit(0)\"",
+    "typecheck": "node --eval \"process.exit(0)\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^15.0.0",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.0.0",
+    "globals": "^17.13.0",
+    "typescript-eslint": "^8.0.0"
+  }
+}

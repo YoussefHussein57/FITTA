@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to the same branch cancels the previous run; CI minutes spent on a
+# commit nobody is waiting for are wasted.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22.20.0'
+
+jobs:
+  # Fast gate. Fails in ~2 minutes if the basics are wrong, before any database
+  # container is started.
+  static:
+    name: Lint, typecheck, build, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      # --frozen-lockfile fails if package.json and pnpm-lock.yaml disagree.
+      # That disagreement is exactly how a dependency silently differs between a
+      # developer's machine and CI (acceptance case 1).
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm run format:check
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Lint
+        run: pnpm run lint
+
+      # Mechanical assertion of the rules a reviewer is otherwise expected to
+      # remember — including acceptance case 11.
+      - name: Repository invariants
+        run: pnpm run check:repo
+
+      - name: Unit tests
+        run: pnpm run test
+
+  # Everything that needs a real PostgreSQL. Split from `static` so a formatting
+  # mistake does not wait on a database to be told about it.
+  integration:
+    name: Integration + E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: static
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: fitta
+          POSTGRES_PASSWORD: fitta_test_password
+          POSTGRES_DB: fitta_test
+          # MUST match docker-compose.yml. Under --locale=C, pg_trgm discards
+          # every Arabic character and the food search silently returns nothing
+          # (ADR-012a). database.integration.spec.ts fails loudly if this drifts.
+          POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C.UTF-8'
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd "pg_isready -U fitta -d fitta_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgresql://fitta:fitta_test_password@localhost:5435/fitta_test?schema=public
+      DATABASE_URL: postgresql://fitta:fitta_test_password@localhost:5435/fitta_test?schema=public
+      WEB_ORIGIN: http://localhost:3000
+      API_BASE_URL: http://localhost:3001
+      NODE_ENV: test
+      PORT: 3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      # Applied from scratch against an empty database on every run. A migration
+      # that only works against a developer's existing database is not a
+      # migration (acceptance case 9).
+      - name: Apply migrations to a fresh database
+        run: pnpm --filter @fitta/api exec prisma migrate deploy
+
+      - name: Verify migration state is clean
+        run: pnpm --filter @fitta/api exec prisma migrate status
+
+      - name: Integration tests
+        run: pnpm run test:integration
+
+      - name: Install Playwright browser
+        run: pnpm --filter @fitta/web exec playwright install --with-deps chromium
+
+      # Playwright starts the built API and web servers itself; see
+      # apps/web/playwright.config.ts.
+      - name: End-to-end tests
+        run: pnpm run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

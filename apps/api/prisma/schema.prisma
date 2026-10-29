@@ -1,0 +1,14 @@
+// FITTA database schema.
+//
+// No domain models yet — Phase 01 establishes the migration pipeline only.
+// The first tables arrive in Phase 02 (User, Session). See docs/DATA_MODEL.md
+// for the model this will grow into, and docs/PHASE_STATUS.md for the order.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

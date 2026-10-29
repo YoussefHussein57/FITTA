@@ -1,0 +1,53 @@
+{
+  "name": "@fitta/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "FITTA backend — NestJS modular monolith",
+  "scripts": {
+    "build": "prisma generate && tsc --project tsconfig.build.json",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "clean": "node --eval \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "start": "node --env-file-if-exists=.env dist/main.js",
+    "start:watch": "node --watch --env-file-if-exists=.env dist/main.js",
+    "build:watch": "tsc --project tsconfig.json --watch",
+    "env:check": "node --env-file-if-exists=.env dist/config/check-env.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:status": "prisma migrate status",
+    "db:studio": "prisma studio",
+    "//": "Destructive. Never referenced by a default flow (acceptance case 11).",
+    "db:reset:DESTRUCTIVE": "prisma migrate reset"
+  },
+  "dependencies": {
+    "@fitta/contracts": "workspace:*",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/swagger": "^11.0.0",
+    "@prisma/client": "^6.0.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "express": "^5.0.0",
+    "helmet": "^8.0.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@fitta/config": "workspace:*",
+    "@nestjs/testing": "^11.0.0",
+    "@swc/core": "^1.7.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/supertest": "^6.0.2",
+    "prisma": "^6.0.0",
+    "supertest": "^7.0.0",
+    "typescript": "^5.6.0",
+    "unplugin-swc": "^1.5.1",
+    "vitest": "^3.0.0"
+  }
+}

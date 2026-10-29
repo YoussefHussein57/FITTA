@@ -1,0 +1,26 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm blocks dependency lifecycle scripts by default — a sensible supply-chain
+# default, since a postinstall script runs arbitrary code from the registry.
+# Prisma genuinely needs its postinstall to fetch query engine binaries, so these
+# three are allowed explicitly. Additions here are a deliberate trust decision,
+# not routine: every `true` below is a package permitted to execute code on install.
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  prisma: true
+
+  # Denied. @scarf/scarf is install analytics pulled in transitively by NestJS.
+  # Its postinstall reports installation telemetry to a third party; nothing in
+  # FITTA needs it, and blocking it costs nothing. Left explicit rather than
+  # removed so the decision is visible instead of being re-litigated at the next
+  # install prompt.
+  '@scarf/scarf': false
+
+  # Allowed: both fetch platform-native binaries in their install script and are
+  # non-functional without them. @swc/core transforms decorator metadata for the
+  # Nest test suite; esbuild backs Vitest.
+  '@swc/core': true
+  esbuild: true
